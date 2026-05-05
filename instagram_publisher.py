@@ -4,8 +4,14 @@ instagram_publisher.py — Instagram Graph API를 이용한 자동 게시 모듈
 
 import os
 import time
+import sys
+import io
 import requests
 from dotenv import load_dotenv
+
+# Windows 터미널 한글 깨짐 방지
+if hasattr(sys.stdout, "buffer"):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # .env 파일 로드
 load_dotenv()
@@ -101,20 +107,19 @@ def post_carousel(image_urls, caption):
         return None
 
 if __name__ == "__main__":
-    # 테스트용 더미 데이터
-    print("🧪 [테스트] 인스타그램 게시 모듈 단독 실행")
+    # 실제 GitHub Pages에 호스팅된 이미지 URL로 테스트
+    print("🧪 [실제 테스트] 인스타그램 게시 시도 중...")
     
-    # 주의: 실제로 게시하려면 외부에서 접근 가능한(Public) 이미지 URL이 필요합니다.
-    dummy_urls = [
-        "https://images.unsplash.com/photo-1552168324-d612d77725e3?w=1080",
-        "https://images.unsplash.com/photo-1503152394-c571994fd383?w=1080",
-        "https://images.unsplash.com/photo-1493246507139-91e8bef99c02?w=1080"
+    real_urls = [
+        "https://jichanghun0812.github.io/insta-bot/output/card_1_ko.jpg",
+        "https://jichanghun0812.github.io/insta-bot/output/card_2_en.jpg",
+        "https://jichanghun0812.github.io/insta-bot/output/card_3_quote.jpg"
     ]
-    dummy_caption = "테스트 게시물입니다. #HistoryBot #InstagramAPI #Python"
+    real_caption = "오늘의 역사 - 테스트 게시 🎉\n\n#오늘의역사 #역사 #history #테스트"
     
-    # .env 설정이 안되어 있다면 실행하지 않음
+    # .env 설정 확인 후 실행
     t, a = _get_config()
     if t and a:
-        post_carousel(dummy_urls, dummy_caption)
+        post_carousel(real_urls, real_caption)
     else:
-        print("💡 .env 설정이 완료된 후 실제 테스트를 진행해 주세요.")
+        print("💡 .env 파일에 INSTAGRAM_ACCESS_TOKEN 및 INSTAGRAM_ACCOUNT_ID를 먼저 입력해 주세요.")

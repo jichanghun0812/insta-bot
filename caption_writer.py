@@ -26,7 +26,7 @@ import google.generativeai as genai
 
 # .env 파일 로드 및 모델 설정
 load_dotenv()
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 
 def _get_api_key() -> str:
