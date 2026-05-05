@@ -49,7 +49,7 @@ def download_image(url: str, save_path: str) -> bool:
 # 핵심 함수: 카드 세트 생성
 # ============================================
 
-def generate_card_set(history_data: dict, caption_data: dict, quote_data: dict = None) -> list[str]:
+def generate_card_set(history_data: dict, caption_data: dict, quote_data: dict = None, icon_path: str = None, post_num: int = 1) -> list[str]:
     print(f"🎨 카드 세트 생성 시작... ({history_data.get('year')}년 사건)")
 
     if not os.path.exists(OUTPUT_DIR):
@@ -70,10 +70,40 @@ def generate_card_set(history_data: dict, caption_data: dict, quote_data: dict =
             print(f"  ⚠️ Base64 인코딩 실패: {e}")
             has_local_image = False
 
+    # 아이콘 SVG를 Base64로 인코딩
+    icon_base64 = ""
+    if icon_path and os.path.exists(icon_path):
+        try:
+            with open(icon_path, "rb") as icon_file:
+                encoded_icon = base64.b64encode(icon_file.read()).decode('utf-8')
+                icon_base64 = f"data:image/svg+xml;base64,{encoded_icon}"
+        except Exception as e:
+            print(f"  ⚠️ 아이콘 인코딩 실패: {e}")
+
     # 템플릿 읽기
     template_path = os.path.join("templates", "card.html")
     with open(template_path, "r", encoding="utf-8") as f:
         template_html = f.read()
+
+    # --- 날짜 및 'N년 전' 계산 추가 ---
+    from datetime import datetime
+    now = datetime.now()
+    event_year = int(history_data.get("year", now.year))
+    years_ago = now.year - event_year
+    
+    # 한국어 날짜 (예: 5월 5일)
+    month_ko = now.strftime("%m").lstrip("0")
+    day_ko = now.strftime("%d").lstrip("0")
+    date_str_ko = f"{month_ko}월 {day_ko}일"
+    
+    # 영어 날짜 (예: May 5)
+    month_en = now.strftime("%B")
+    date_str_en = f"{month_en} {day_ko}"
+    
+    # 배지용 전체 날짜
+    full_date_ko = f"{event_year}년 {date_str_ko}"
+    full_date_en = f"{date_str_en}, {event_year} AD"
+    # -------------------------------
 
     generated_files = []
     modes = [
@@ -92,15 +122,24 @@ def generate_card_set(history_data: dict, caption_data: dict, quote_data: dict =
             
             # 배경 이미지 설정 (Base64 데이터 주입)
             html = html.replace("{{image_base64}}", image_base64)
+            html = html.replace("{{icon_base64}}", icon_base64)
             bg_display = "block" if has_local_image and m["name"] != "quote" else "none"
             html = html.replace("{{bg_image_display}}", bg_display)
             
             # 공통 및 모드별 설정
             html = html.replace("{{header_tag}}", m["tag"])
+            html = html.replace("{{year}}", str(event_year))
             html = html.replace("{{card_year}}", caption_data.get("card_year", ""))
+            html = html.replace("{{years_ago}}", str(years_ago))
+            html = html.replace("{{date_str_ko}}", date_str_ko)
+            html = html.replace("{{date_str_en}}", date_str_en)
+            html = html.replace("{{full_date_ko}}", full_date_ko)
+            html = html.replace("{{full_date_en}}", full_date_en)
             html = html.replace("{{mode_ko_display}}", "block" if m["name"] == "ko" else "none")
             html = html.replace("{{mode_en_display}}", "block" if m["name"] == "en" else "none")
             html = html.replace("{{mode_quote_display}}", "block" if m["name"] == "quote" else "none")
+            html = html.replace("{{mode_quote_none_display}}", "none" if m["name"] == "quote" else "block")
+            html = html.replace("{{post_number}}", f"#{post_num:03d}")
 
             # 데이터 채우기 (KO/EN/QUOTE)
             html = html.replace("{{card_headline_ko}}", caption_data.get("card_headline_ko", ""))

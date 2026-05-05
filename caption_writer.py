@@ -69,7 +69,13 @@ HISTORY_PROMPT_TEMPLATE = """
 ### 3. 명언 번역 (3장용, 명언 정보가 있을 때만)
 - 제공된 명언의 의미를 살려 멋진 한국어로 번역해주세요.
 
-### 4. 인스타그램 캡션
+### 4. 카테고리 및 아이콘 분류 (NEW)
+- 사건의 성격에 맞춰 다음 8개 중 하나를 `category`로 지정하세요: 
+  (conflict, modern, nature, science, life, trade, health, culture)
+- Lucide 아이콘 명칭 중에서 가장 잘 어울리는 하나를 `icon_primary`로 선정하세요. (예: crown, swords, lightbulb)
+- 보조 키워드를 `icon_keywords` 리스트로 제공하세요.
+
+### 5. 인스타그램 캡션
 - 역사적 맥락과 현대적 교훈을 담은 풍부한 내용의 게시글 본문.
 - 이모지와 해시태그 포함.
 
@@ -86,7 +92,10 @@ HISTORY_PROMPT_TEMPLATE = """
     {{"word": "word3", "pron": "[발음]", "meaning": "뜻"}}
   ],
   "quote_ko": "명언 번역 (없으면 빈 문자열)",
-  "instagram_caption": "본문 내용..."
+  "instagram_caption": "본문 내용...",
+  "category": "분류",
+  "icon_primary": "아이콘명",
+  "icon_keywords": ["키워드1", "키워드2"]
 }}
 """
 
@@ -142,7 +151,12 @@ def _parse_response(response_text: str) -> dict | None:
         text = text.split("```")[1].split("```")[0].strip()
     
     try:
-        return json.loads(text)
+        data = json.loads(text)
+        # 기본값 보장
+        data.setdefault("category", "conflict")
+        data.setdefault("icon_primary", "scroll")
+        data.setdefault("icon_keywords", [])
+        return data
     except:
         return None
 

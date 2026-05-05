@@ -21,6 +21,23 @@ from quote_fetcher import get_relevant_quote
 from caption_writer import generate_history_caption
 from card_generator import generate_card_set
 from instagram_publisher import post_carousel
+from icon_matcher import get_icon_path
+
+COUNTER_FILE = "post_counter.txt"
+
+def get_post_num():
+    if not os.path.exists(COUNTER_FILE):
+        return 1
+    try:
+        with open(COUNTER_FILE, "r") as f:
+            return int(f.read().strip())
+    except:
+        return 1
+
+def increment_post_num():
+    num = get_post_num()
+    with open(COUNTER_FILE, "w") as f:
+        f.write(str(num + 1))
 
 # Windows 터미널 한글 깨짐 방지 (필요 시에만 실행)
 def set_utf8_stdout():
@@ -74,7 +91,8 @@ def main():
     print(f"   ✅ 수집 완료: {event['year']}년 사건 선정")
 
     # 2. 콘텐츠 구성 단계 (AI)
-    print("2️⃣ [AI] Gemini를 이용한 스토리텔링 및 카피 생성 중...")
+    print("2️⃣ [AI] Gemini를 이용한 스토리텔링 및 카피 생성 중... (12초 안전 대기)")
+    time.sleep(12) # 분당 API 호출 한도(429 에러) 방지용 안전 장치
     caption_result = generate_history_caption(event, quote)
     
     # --- [진단 로그 추가] ---
@@ -86,9 +104,18 @@ def main():
     
     print("   ✅ 카피 생성 완료")
 
+    # 2.5 아이콘 매칭 단계 (NEW)
+    icon_path = get_icon_path(
+        caption_result.get("category"),
+        caption_result.get("icon_primary"),
+        caption_result.get("icon_keywords")
+    )
+    print(f"   🎯 매칭된 아이콘: {icon_path}")
+
     # 3. 이미지 생성 단계
     print("3️⃣ [이미지] 1080x1080 카드 뉴스 3장 제작 중...")
-    generated_files = generate_card_set(event, caption_result, quote)
+    post_num = get_post_num()
+    generated_files = generate_card_set(event, caption_result, quote, icon_path=icon_path, post_num=post_num)
     if not generated_files:
         print("❌ 실패: 카드 이미지 생성에 실패했습니다.")
         return
@@ -139,6 +166,8 @@ def main():
     
     if post_id:
         print(f"\n🎉 [최종 성공] 인스타그램 게시가 완료되었습니다! (ID: {post_id})")
+        increment_post_num()
+        print(f"   📈 연재 차수 업데이트 완료 (다음 번호: {get_post_num()})")
     else:
         print("\n❌ 최종 실패: 인스타그램 게시 단계에서 문제가 발생했습니다.")
 
